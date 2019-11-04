@@ -67,4 +67,5 @@ if __name__ == '__main__':
         "If         : condition, then_branch, else_branch",
         "Print      : expression",
         "Var        : name, initializer",
+        "While      : condition, body",
     ])
