@@ -21,6 +21,8 @@ class Parser:
 
     def declaration(self):
         try:
+            if self.match(TokenType.FUN):
+                return self.function("function")
             if self.match(TokenType.VAR):
                 return self.var_declaration()
             return self.statement()
@@ -118,9 +120,28 @@ class Parser:
         self.consume(TokenType.SEMICOLON, "Expect ';' after expression.")
         return Stmt.Expression(expr)
 
-    def block(self):
-        statements = []
+    def function(self, kind):
+        name = self.consume(TokenType.IDENTIFIER, "Expect {} name.".format(kind))
+        self.consume(TokenType.LEFT_PAREN, "Expect '(' after {} name.".format(kind))
+        params = []
+        if not self.check(TokenType.RIGHT_PAREN):
+            while True:
+                if len(params) >= 255:
+                    self.error(self.peek(), "Can't have more than 255 params")
 
+                params.append(self.consume(TokenType.IDENTIFIER, "Expect param name"))
+                if not self.match(TokenType.COMMA):
+                    break
+        self.consume(TokenType.RIGHT_PAREN, "Expect ')' after params.")
+
+        if not self.check(TokenType.LEFT_BRACE):
+            self.consume(TokenType.LEFT_BRACE, "Expect '{' before {} body.".format(kind))
+        body = self.block()
+        return Stmt.Function(name, params, body)
+
+    def block(self):
+        self.consume(TokenType.LEFT_BRACE, "logic error: block called when next token was not LEFT_BRACE")
+        statements = []
         while not self.check(TokenType.RIGHT_BRACE) and not self.is_at_end():
             statements.append(self.declaration())
 
@@ -207,7 +228,31 @@ class Parser:
             right = self.unary()
             return Expr.Unary(operator, right)
 
-        return self.primary()
+        return self.call()
+
+    def finish_call(self, callee):
+        arguments = []
+
+        if not self.check(TokenType.RIGHT_PAREN):
+            arguments.append(self.expression())
+            while self.match(TokenType.COMMA):
+                if len(arguments) >= 255:
+                    self.error(self.peek(), "Cannot have more than 255 args.")
+                arguments.append(self.expression())
+
+        paren = self.consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.")
+        return Expr.Call(callee, paren, arguments)
+
+    def call(self):
+        expr = self.primary()
+
+        while True:
+            if self.match(TokenType.LEFT_PAREN):
+                expr = self.finish_call(expr)
+            else:
+                break
+
+        return expr
 
     def primary(self):
         if self.match(TokenType.FALSE): return Expr.Literal(False)

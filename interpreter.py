@@ -1,11 +1,16 @@
 from expr import Visitor as ExprVisitor
+from lox_callable import LoxCallable, _Clock, LoxFunction
 from stmt import Visitor as StmtVisitor
 from runtime_error import LoxRuntimeError
 from tokentype import TokenType
 from environment import Environment
 
+GLOBALS = {"clock": _Clock}
+
 class Interpreter(ExprVisitor, StmtVisitor):
-    environment = Environment()
+    def __init__(self):
+        self.globals = Environment()
+        self.environment = self.globals
 
     def visit_LiteralExpr(self, expr):
         return expr.value
@@ -46,6 +51,10 @@ class Interpreter(ExprVisitor, StmtVisitor):
         self._evaluate(stmt.expression)
         return None
 
+    def visit_FunctionStmt(self, stmt):
+        func = LoxFunction(stmt, self.environment)
+        self.environment.define(stmt.name.lexeme, func)
+        return None
 
     def visit_IfStmt(self, stmt):
         if self._is_truthy(self._evaluate(stmt.condition)):
@@ -133,6 +142,20 @@ class Interpreter(ExprVisitor, StmtVisitor):
             return not self._is_equal(left, right)
 
         return None
+
+    def visit_CallExpr(self, expr):
+        callee = self._evaluate(expr.callee)
+        arguments = [self._evaluate(arg) for arg in expr.arguments]
+        if not isinstance(callee, LoxCallable):
+            raise LoxRuntimeError(expr.paren, "Can only call functions and classes.")
+
+        if len(arguments) != callee.arity():
+            raise LoxRuntimeError(
+                expr.callee,
+                f"Function {callee} called with {len(args)} arguments, expected {len(arity())}",
+            )
+
+        return callee.call(self, arguments)
 
     def visit_GroupingExpr(self, expr):
         return self._evaluate(expr.expression)

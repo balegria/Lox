@@ -13,6 +13,9 @@ class Visitor(ABC):
     def visit_ExpressionStmt(self):
         pass
     @abstractmethod
+    def visit_FunctionStmt(self):
+        pass
+    @abstractmethod
     def visit_IfStmt(self):
         pass
     @abstractmethod
@@ -47,6 +50,17 @@ class Expression(Stmt):
 
     def accept(self, visitor):
         return visitor.visit_ExpressionStmt(self)
+
+
+class Function(Stmt):
+
+    def __init__(self, name, params, body):
+        self.name = name
+        self.params = params
+        self.body = body
+
+    def accept(self, visitor):
+        return visitor.visit_FunctionStmt(self)
 
 
 class If(Stmt):

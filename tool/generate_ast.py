@@ -54,6 +54,7 @@ if __name__ == '__main__':
     define_ast('..', 'expr.py', "Expr", [
         "Assign   : name, value",
         "Binary   : left, operator, right",
+        "Call     : callee, paren, arguments",
         "Grouping : expression",
         "Literal  : value",
         "Logical  : left, operator, right",
@@ -64,6 +65,7 @@ if __name__ == '__main__':
     define_ast('..', 'stmt.py', "Stmt", [
         "Block      : statements",
         "Expression : expression",
+        "Function   : name, params, body",
         "If         : condition, then_branch, else_branch",
         "Print      : expression",
         "Var        : name, initializer",
